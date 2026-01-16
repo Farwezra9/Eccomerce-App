@@ -17,7 +17,7 @@ export default function UserDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    axios.get('/api/products').then(res => setProducts(res.data));
+    axios.get('/api/user').then(res => setProducts(res.data));
   }, []);
 
   return (
