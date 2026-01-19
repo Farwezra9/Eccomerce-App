@@ -39,11 +39,12 @@ export default function ProductDetailPage() {
 
   const addToCart = async () => {
     try {
-      await axios.post('/api/user/cart/add', {
+      await axios.post('/api/user/cart', {
         product_id: product.product_id,
         quantity
       });
       alert('Berhasil ditambahkan ke keranjang');
+      router.push(`/user/cart`);
     } catch (err) {
       console.error(err);
       alert('Gagal menambahkan ke keranjang');

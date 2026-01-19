@@ -16,17 +16,8 @@ export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  const loadCart = async () => {
-    try {
-      const res = await axios.get('/api/user/cart');
-      setCart(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   useEffect(() => {
-    loadCart();
+    axios.get('/api/user/cart').then(res =>  setCart(res.data));
   }, []);
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -69,7 +60,7 @@ export default function CartPage() {
               <tr key={item.cart_id}>
                 <td
                   style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}
-                  onClick={() => router.push(`/user/cart/detail/${item.product_id}?quantity=${item.quantity}`)}
+                  onClick={() => router.push(`/user/cart/${item.product_id}?quantity=${item.quantity}`)}
                 >
                   {item.product_name}
                 </td>
