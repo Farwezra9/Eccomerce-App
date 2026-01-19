@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 interface ProductDetail {
@@ -22,13 +22,19 @@ interface Address {
 }
 
 export default function CheckoutPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const product_id = searchParams.get('product_id');
-  const quantityParam = searchParams.get('quantity');
+
+  // --- client-side only ---
+  const [productId, setProductId] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setProductId(params.get('product_id'));
+    setQuantity(Number(params.get('quantity') || 1));
+  }, []);
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
-  const [quantity, setQuantity] = useState(Number(quantityParam || 1));
   const [loading, setLoading] = useState(true);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -47,11 +53,11 @@ export default function CheckoutPage() {
 
   // Load product
   useEffect(() => {
-    if (!product_id) return;
-    axios.get(`/api/user/products/${product_id}`)
+    if (!productId) return;
+    axios.get(`/api/user/products/${productId}`)
       .then(res => setProduct(res.data))
       .finally(() => setLoading(false));
-  }, [product_id]);
+  }, [productId]);
 
   // Load user's saved addresses
   useEffect(() => {
@@ -62,15 +68,12 @@ export default function CheckoutPage() {
       });
   }, []);
 
-  if (!product_id) return <p>Produk tidak ditemukan.</p>;
   if (loading) return <p>Loading...</p>;
   if (!product) return <p>Produk tidak ditemukan.</p>;
 
   const handleCheckout = async () => {
     try {
-      const addressId = selectedAddressId || null;
-      const shipping = addressId ? { id: addressId } : newAddress;
-
+      const shipping = selectedAddressId ? { id: selectedAddressId } : newAddress;
       const res = await axios.post('/api/user/checkout', {
         product_id: product.product_id,
         quantity,
@@ -78,7 +81,6 @@ export default function CheckoutPage() {
         courier,
         payment_method: paymentMethod
       });
-
       alert('Checkout berhasil!');
       router.push(`/user/orders/${res.data.order_id}`);
     } catch (err: any) {
@@ -152,7 +154,10 @@ export default function CheckoutPage() {
         <option value="ewallet">E-Wallet</option>
       </select>
 
-      <button onClick={handleCheckout} style={{ marginTop: 16, padding: 8, background: 'green', color: 'white' }}>
+      <button
+        onClick={handleCheckout}
+        style={{ marginTop: 16, padding: 8, background: 'green', color: 'white' }}
+      >
         Bayar Sekarang
       </button>
     </div>
