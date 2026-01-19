@@ -104,13 +104,14 @@ CREATE TABLE payment (
     id SERIAL PRIMARY KEY,
     order_id INT REFERENCES orders(id) ON DELETE CASCADE,
     method VARCHAR(50) NOT NULL,
+    amount NUMERIC(10,2) NOT NULL,
     status VARCHAR(50) DEFAULT 'pending',
     transaction_id VARCHAR(150),
     paid_at TIMESTAMP
 );
 
 -- ===========================================
--- 9️⃣ Tabel shipping_addresses
+-- 9️⃣ Tabel alamat snapshot
 -- ===========================================
 CREATE TABLE shipping_addresses (
     id SERIAL PRIMARY KEY,
@@ -121,6 +122,16 @@ CREATE TABLE shipping_addresses (
     city VARCHAR(100),
     postal_code VARCHAR(20),
     created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE user_addresses (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  recipient_name VARCHAR(100),
+  phone VARCHAR(20),
+  address TEXT,
+  city VARCHAR(100),
+  postal_code VARCHAR(20),
+  created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ===========================================

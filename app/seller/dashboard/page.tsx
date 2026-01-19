@@ -1,26 +1,32 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { verifyToken } from '@/lib/auth';
-import { pool } from '@/lib/db';
+'use client';
 
-export default async function SellerDashboard() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
-  if (!token) {
-    redirect('/auth/login');
-  }
+export default function SellerDashboard() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  const user = verifyToken(token) as any;
+  useEffect(() => {
+  const check = async () => {
+    try {
+      const res = await axios.get('/api/seller/check');
+      if (!res.data.exists) {
+        router.replace('/user/register-seller');
+        return;
+      }
+      setLoading(false);
+    } catch {
+      router.replace('/auth/login');
+    }
+  };
 
-  const seller = await pool.query(
-    'SELECT id FROM sellers WHERE user_id = $1',
-    [user.id]
-  );
+  check();
+}, [router]);
 
-  if (seller.rows.length === 0) {
-    redirect('/seller/register');
-  }
+
+  if (loading) return <p>Loading...</p>;
 
   return (
     <>

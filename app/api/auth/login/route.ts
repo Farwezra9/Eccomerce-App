@@ -1,3 +1,4 @@
+// app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { verifyPassword, signToken } from '@/lib/auth';
@@ -12,13 +13,12 @@ export async function POST(req: Request) {
 
   const result = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
   const user = result.rows[0];
-
   if (!user) return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
 
   const isValid = await verifyPassword(password, user.password);
   if (!isValid) return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
 
-  // sign token dengan role
+  // Buat token
   const token = signToken({ id: user.id, email: user.email, role: user.role });
 
   const response = NextResponse.json({

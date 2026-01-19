@@ -6,10 +6,9 @@ import Link from 'next/link';
 
 interface OrderItem {
   id: number;
-  product_id: number;
+  product_name: string;
   quantity: number;
   price: number;
-  product_name: string;
 }
 
 interface Order {
@@ -17,53 +16,75 @@ interface Order {
   total: number;
   order_status: string;
   created_at: string;
-  recipient_name: string;
-  recipient_phone: string;
-  address: string;
-  city: string;
-  postal_code: string;
-  payment_method: string;
-  payment_status: string;
-  courier_name: string;
-  shipping_status: string;
-  tracking_number: string;
   items: OrderItem[];
 }
 
+const statusColor = (status: string) => {
+  switch (status) {
+    case 'pending': return '#ff9800';
+    case 'paid': return '#2196f3';
+    case 'shipped': return '#673ab7';
+    case 'completed': return '#4caf50';
+    case 'cancelled': return '#f44336';
+    default: return '#999';
+  }
+};
+
 export default function UserOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get('/api/user/order')
-      .then(res => setOrders(res.data))
-      .finally(() => setLoading(false));
+    axios.get('/api/user/orders').then(res => setOrders(res.data));
   }, []);
 
-  if (loading) return <p>Loading...</p>;
-  if (orders.length === 0) return <p>Belum ada order</p>;
+  if (orders.length === 0) return <p>Belum ada pesanan</p>;
 
   return (
-    <div>
-      <h1>Riwayat Order</h1>
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <h1>Pesanan Saya</h1>
+
       {orders.map(order => (
-        <div key={order.order_id} style={{ border: '1px solid #ccc', padding: 10, marginBottom: 10 }}>
-          <h2>Order #{order.order_id}</h2>
-          <p>Status Order: {order.order_status}</p>
-          <p>Total: Rp {order.total.toLocaleString()}</p>
-          <p>Dipesan: {new Date(order.created_at).toLocaleString()}</p>
-          <p>Alamat: {order.recipient_name}, {order.address}, {order.city}, {order.postal_code} ({order.recipient_phone})</p>
-          <p>Payment: {order.payment_method} - {order.payment_status}</p>
-          <p>Shipping: {order.courier_name} - {order.shipping_status} {order.tracking_number && `(Tracking: ${order.tracking_number})`}</p>
-          <h3>Items:</h3>
-          <ul>
-            {order.items.map(item => (
-              <li key={item.id}>
-                {item.product_name} x {item.quantity} = Rp {(item.price * item.quantity).toLocaleString()}
-              </li>
-            ))}
-          </ul>
-          <Link href={`/user/orders/${order.order_id}`}>Detail Order</Link>
+        <div
+          key={order.order_id}
+          style={{
+            border: '1px solid #e0e0e0',
+            borderRadius: 6,
+            padding: 12,
+            marginBottom: 16,
+            background: '#fff'
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Order #{order.order_id}</span>
+            <span
+              style={{
+                color: statusColor(order.order_status),
+                fontWeight: 'bold'
+              }}
+            >
+              {order.order_status.toUpperCase()}
+            </span>
+          </div>
+
+          <hr />
+
+          {/* Items */}
+          {order.items.map(item => (
+            <div key={item.id} style={{ marginBottom: 6 }}>
+              <b>{item.product_name}</b> x {item.quantity}
+            </div>
+          ))}
+
+          <hr />
+
+          {/* Footer */}
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <b>Total: Rp {order.total.toLocaleString()}</b>
+            <Link href={`/user/orders/${order.order_id}`}>
+              Lihat Detail →
+            </Link>
+          </div>
         </div>
       ))}
     </div>

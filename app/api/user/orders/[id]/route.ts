@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyToken } from "@/lib/auth";
+import { getUserFromToken } from '@/lib/auth';
 import { pool } from "@/lib/db";
 
 export async function GET(req: Request, context: any) {
@@ -9,13 +9,10 @@ export async function GET(req: Request, context: any) {
     const orderId = Number(params.id);
     if (!orderId) return NextResponse.json({ message: 'Order ID invalid' }, { status: 400 });
 
-    // Ambil token dari cookie
-    const cookieHeader = req.headers.get('cookie') || '';
-    const token = cookieHeader.split('; ').find(c => c.startsWith('token='))?.split('=')[1];
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-
-    const user: any = verifyToken(token);
-    if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const user = await getUserFromToken();
+    if (!user) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
 
     // Ambil order
     const orderRes = await pool.query(

@@ -5,22 +5,34 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
+interface UserProfile {
+  id: number;
+  name: string;
+  email: string;
+}
+
 export default function Navbar() {
   const router = useRouter();
-  const [isSeller, setIsSeller] = useState<boolean | null>(null); // null = loading
+  const [isSeller, setIsSeller] = useState<boolean | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    const checkSeller = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get('/api/seller/check');
-        setIsSeller(res.data.exists);
+        // Cek apakah seller
+        const resSeller = await axios.get('/api/seller/check');
+        setIsSeller(resSeller.data.exists);
+
+        // Ambil profil user
+        const resProfile = await axios.get('/api/profile');
+        setProfile(resProfile.data);
       } catch (err) {
         console.error(err);
-        setIsSeller(false); // jika error, anggap bukan seller
+        setIsSeller(false);
       }
     };
 
-    checkSeller();
+    fetchData();
   }, []);
 
   const logout = async () => {
@@ -28,14 +40,15 @@ export default function Navbar() {
     router.push('/auth/login');
   };
 
-  // sementara loading
-  if (isSeller === null) return <nav style={styles.nav}>Memuat...</nav>;
+  if (isSeller === null || !profile) return <nav style={styles.nav}>Memuat...</nav>;
 
   return (
     <nav style={styles.nav}>
       <Link href="/" style={styles.logo}>TOKO</Link>
 
       <div style={styles.menu}>
+        <span>Hai, {profile.name} ({profile.email})</span>
+
         <Link href="/user/dashboard">Produk</Link>
         <Link href="/user/cart">Keranjang</Link>
         <Link href="/user/orders">Pesanan</Link>
@@ -45,6 +58,7 @@ export default function Navbar() {
         ) : (
           <Link href="/user/register-seller">Daftar Jadi Seller</Link>
         )}
+        <Link href="/user/profile">Profile</Link>
 
         <button onClick={logout} style={styles.logout}>Logout</button>
       </div>

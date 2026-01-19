@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyToken } from "@/lib/auth";
+import { getUserFromToken } from '@/lib/auth';
 import { pool } from "@/lib/db";
 
 export async function GET(req: Request, context: any) {
@@ -9,13 +9,10 @@ export async function GET(req: Request, context: any) {
     const productId = Number(params.id);
     if (!productId) return NextResponse.json({ message: 'Product ID invalid' }, { status: 400 });
 
-    // Ambil token dari cookie (opsional jika hanya untuk user login)
-    const cookieHeader = req.headers.get('cookie') || '';
-    const token = cookieHeader.split('; ').find(c => c.startsWith('token='))?.split('=')[1];
-
-    let user: any = null;
-    if (token) user = verifyToken(token);
-
+    const user = await getUserFromToken();
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
     // Ambil detail produk beserta seller dan gambar utama
     const res = await pool.query(
       `SELECT 

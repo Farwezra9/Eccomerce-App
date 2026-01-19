@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
+import { getUserFromToken } from '@/lib/auth';
 import { pool } from "@/lib/db";
 
 export async function POST(req: Request) {
- const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-   if (!token) {
+ const user = await getUserFromToken();
+  if (!user) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
-
-  const user = verifyToken(token) as any;
   const { product_id, quantity } = await req.json();
 
   const product = await pool.query(

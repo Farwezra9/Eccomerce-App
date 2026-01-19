@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -14,17 +13,13 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const res = await axios.post('/api/auth/login', { email, password });
-      const role = res.data.role; // ambil role langsung dari response
+      const role = res.data.role;
 
-      // Redirect berdasarkan role
-      if (role === 'superadmin' || role === 'admin') {
-        router.push('/admin/dashboard');
-      } else if (role === 'seller') {
-        router.push('/seller/dashboard');
-      } else {
-        router.push('/user/dashboard');
-      }
-      } catch (err: any) {
+      // Redirect sesuai role
+      if (role === 'superadmin' || role === 'admin') router.push('/admin/dashboard');
+      else if (role === 'seller') router.push('/seller/dashboard');
+      else router.push('/user/dashboard');
+    } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');
     }
   };
@@ -32,30 +27,17 @@ export default function LoginPage() {
   return (
     <>
       <h1>Login</h1>
-      <form onSubmit={handleSubmit} style={{ maxWidth: '400px' }}>
+      <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
         <div>
           <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-          />
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
         </div>
-
-        <div style={{ marginTop: '10px' }}>
+        <div style={{ marginTop: 10 }}>
           <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
         </div>
-
-        {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
-
-        <button type="submit" style={{ marginTop: '15px' }}>Login</button>
+        {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
+        <button type="submit" style={{ marginTop: 15 }}>Login</button>
       </form>
     </>
   );

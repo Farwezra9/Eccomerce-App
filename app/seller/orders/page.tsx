@@ -6,10 +6,19 @@ import axios from 'axios';
 export default function SellerOrders() {
   const [orders, setOrders] = useState<any[]>([]);
 
-  useEffect(() => {
-    axios.get('/api/seller/orders')
-      .then(res => setOrders(res.data));
-  }, []);
+ useEffect(() => {
+  const loadOrders = async () => {
+    try {
+      const res = await axios.get('/api/seller/orders');
+      setOrders(res.data);
+    } catch {
+      setOrders([]);
+    }
+  };
+
+  loadOrders();
+}, []);
+
 
   return (
     <>

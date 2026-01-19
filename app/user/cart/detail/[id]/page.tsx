@@ -37,18 +37,6 @@ export default function ProductDetailPage() {
   if (loading) return <p>Loading...</p>;
   if (!product) return <p>Produk tidak ditemukan</p>;
 
-  const addToCart = async () => {
-    try {
-      await axios.post('/api/user/cart/add', {
-        product_id: product.product_id,
-        quantity
-      });
-      alert('Berhasil ditambahkan ke keranjang');
-    } catch (err) {
-      console.error(err);
-      alert('Gagal menambahkan ke keranjang');
-    }
-  };
 
   const orderNow = () => {
     router.push(`/user/checkout?product_id=${product.product_id}&quantity=${quantity}`);
@@ -100,9 +88,6 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ===== Action Buttons ===== */}
-      <button onClick={addToCart} disabled={product.stock === 0}>
-        Masukkan Keranjang
-      </button>
 
       <button style={{ marginLeft: 10 }} onClick={orderNow} disabled={product.stock === 0}>
         Pesan Sekarang

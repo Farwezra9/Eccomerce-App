@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from "@/lib/auth";
+import { getUserFromToken } from '@/lib/auth';
 import { pool } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value;
-    if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-
-    const user: any = verifyToken(token);
-    if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const user = await getUserFromToken();
+    if (!user) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
 
     const ordersRes = await pool.query(
       `SELECT 

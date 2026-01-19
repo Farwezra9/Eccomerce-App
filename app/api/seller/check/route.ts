@@ -1,16 +1,14 @@
 // app/api/seller/check/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { pool } from '@/lib/db';
-import { verifyToken } from '@/lib/auth';
+import { getUserFromToken } from '@/lib/auth';
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-
-  if (!token) return NextResponse.json({ exists: false });
-
-  const user = verifyToken(token) as any;
+  const user = await getUserFromToken();
+  
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
   const sellerRes = await pool.query(
     'SELECT id FROM sellers WHERE user_id=$1',
     [user.id]
