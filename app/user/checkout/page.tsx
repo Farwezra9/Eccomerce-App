@@ -62,8 +62,9 @@ export default function CheckoutPage() {
       });
   }, []);
 
+  if (!product_id) return <p>Produk tidak ditemukan.</p>;
   if (loading) return <p>Loading...</p>;
-  if (!product) return <p>Produk tidak ditemukan</p>;
+  if (!product) return <p>Produk tidak ditemukan.</p>;
 
   const handleCheckout = async () => {
     try {
@@ -87,7 +88,7 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: 600, margin: '20px auto' }}>
       <h1>Checkout: {product.product_name}</h1>
       <p>💰 Harga: Rp {product.price.toLocaleString()}</p>
       <p>Jumlah: {quantity}</p>
@@ -151,7 +152,9 @@ export default function CheckoutPage() {
         <option value="ewallet">E-Wallet</option>
       </select>
 
-      <button onClick={handleCheckout}>Bayar Sekarang</button>
+      <button onClick={handleCheckout} style={{ marginTop: 16, padding: 8, background: 'green', color: 'white' }}>
+        Bayar Sekarang
+      </button>
     </div>
   );
 }
