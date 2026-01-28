@@ -21,17 +21,44 @@ export default function UserDashboard() {
   }, []);
 
   return (
-    <div>
-      <h1>Semua Produk</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+    <div className="min-h-screen bg-gray-50 px-6 py-8">
+      <h1 className="mb-6 text-2xl font-bold text-gray-800">
+        Semua Produk
+      </h1>
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {products.map(p => (
-          <Link key={p.product_id} href={`/user/products/${p.product_id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ border: '1px solid #ccc', padding: 10, cursor: 'pointer' }}>
-              {p.primary_image && <img src={p.primary_image} alt={p.product_name} width={200} />}
-              <h3>{p.product_name}</h3>
-              <p>🏪 {p.shop_name}</p>
-              <p>💰 Rp {p.price}</p>
-              <p>Stock: {p.stock}</p>
+          <Link
+            key={p.product_id}
+            href={`/user/products/${p.product_id}`}
+            className="group"
+          >
+            <div className="overflow-hidden rounded-xl bg-white shadow-sm transition hover:shadow-lg">
+              {p.primary_image && (
+                <img
+                  src={p.primary_image}
+                  alt={p.product_name}
+                  className="h-48 w-full object-cover transition group-hover:scale-105"
+                />
+              )}
+
+              <div className="p-4">
+                <h3 className="mb-1 text-lg font-semibold text-gray-800">
+                  {p.product_name}
+                </h3>
+
+                <p className="text-sm text-gray-500">
+                  🏪 {p.shop_name}
+                </p>
+
+                <p className="mt-2 font-bold text-green-600">
+                  💰 Rp {p.price.toLocaleString('id-ID')}
+                </p>
+
+                <p className="mt-1 text-sm text-gray-600">
+                  Stock: {p.stock}
+                </p>
+              </div>
             </div>
           </Link>
         ))}

@@ -10,6 +10,7 @@ interface OrderItem {
   quantity: number;
   price: number;
   product_name: string;
+  product_image: string | null;
 }
 
 interface OrderDetail {
@@ -37,7 +38,6 @@ export default function OrderDetailPage() {
   const [payLoading, setPayLoading] = useState(false);
   const [snapLoaded, setSnapLoaded] = useState(false);
 
-  // Load order
   useEffect(() => {
     if (!id) return;
     axios.get(`/api/user/orders/${id}`)
@@ -67,9 +67,7 @@ export default function OrderDetailPage() {
     if (!order || !snapLoaded) return alert('Tunggu sebentar, Snap.js belum siap');
     setPayLoading(true);
 
-    const res = await axios.post('/api/payment/midtrans', {
-      order_id: order.order_id,
-    });
+    const res = await axios.post('/api/payment/midtrans', { order_id: order.order_id });
     const snapToken = res.data.snapToken;
 
     // @ts-ignore
@@ -91,49 +89,78 @@ export default function OrderDetailPage() {
     setPayLoading(false);
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (!order) return <p>Order tidak ditemukan</p>;
+  if (loading) return <p className="text-center mt-6">Loading...</p>;
+  if (!order) return <p className="text-center mt-6">Order tidak ditemukan</p>;
 
   const canCancel = order.order_status === 'pending' && order.payment_status === 'pending';
   const canPay = canCancel;
 
   return (
-    <div style={{ maxWidth: 600, margin: '20px auto' }}>
-      <h1>Detail Order #{order.order_id}</h1>
-      <p>Status Order: <b>{order.order_status}</b></p>
-      <p>Total: Rp {order.total.toLocaleString()}</p>
-      <p>Dipesan: {new Date(order.created_at).toLocaleString()}</p>
+    <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-4 rounded-md text-white flex justify-between items-center">
+        <span className="font-semibold">Status {order.order_status}</span>
+        <span>{new Date(order.created_at).toLocaleString()}</span>
+      </div>
 
-      {canCancel && (
-        <button onClick={cancelOrder} disabled={cancelLoading} style={{ background: 'red', color: 'white', padding: 8, marginTop: 12 }}>
-          {cancelLoading ? 'Membatalkan...' : 'Batalkan Order'}
-        </button>
-      )}
+      {/* Actions */}
+      <div className="flex gap-4">
+        {canCancel && (
+          <button
+            onClick={cancelOrder}
+            disabled={cancelLoading}
+            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+          >
+            {cancelLoading ? 'Membatalkan...' : 'Batalkan Order'}
+          </button>
+        )}
+        {canPay && (
+          <button
+            onClick={handlePayment}
+            disabled={payLoading}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+          >
+            {payLoading ? 'Mengarahkan ke Midtrans...' : 'Bayar Sekarang'}
+          </button>
+        )}
+      </div>
 
-      {canPay && (
-        <button onClick={handlePayment} disabled={payLoading} style={{ background: 'green', color: 'white', padding: 8, marginLeft: 12 }}>
-          {payLoading ? 'Mengarahkan ke Midtrans...' : 'Bayar Sekarang'}
-        </button>
-      )}
+      {/* Shipping Info */}
+      <div className="bg-white shadow-md rounded-md p-4 space-y-2">
+        <h2 className="font-semibold mb-2">Alamat Pengiriman</h2>
+        <p>Nama: {order.recipient_name || '-'}</p>
+        <p>Alamat: {order.address ? `${order.address}, ${order.city}, ${order.postal_code}` : '-'}</p>
+        <p>HP: {order.recipient_phone || '-'}</p>
+      </div>
 
-      <hr />
-      <h2>Alamat Pengiriman</h2>
-      <p>Nama: {order.recipient_name || '-'}</p>
-      <p>Alamat: {order.address ? `${order.address}, ${order.city}, ${order.postal_code}` : '-'}</p>
-      <p>HP: {order.recipient_phone || '-'}</p>
+      {/* Payment Info */}
+      <div className="bg-white shadow-md rounded-md p-4 space-y-2">
+        <h2 className="font-semibold mb-2">Pembayaran</h2>
+        <p>Metode: {order.payment_method || 'Belum dipilih'}</p>
+        <p>Status: {order.payment_status || 'pending'}</p>
+        {order.courier_name && <p>Kurir: {order.courier_name}</p>}
+        {order.tracking_number && <p>No. Resi: {order.tracking_number}</p>}
+      </div>
 
-      <hr />
-      <h2>Payment</h2>
-      <p>Metode: {order.payment_method || 'Belum dipilih'}</p>
-      <p>Status: {order.payment_status || 'pending'}</p>
-
-      <hr />
-      <h2>Items</h2>
-      <ul>
+      {/* Items */}
+      <div className="bg-white shadow-md rounded-md p-4 space-y-4">
+        <h2 className="font-semibold mb-2">Items</h2>
         {order.items.map(item => (
-          <li key={item.id}>{item.product_name} x {item.quantity} = Rp {(item.price * item.quantity).toLocaleString()}</li>
+          <div key={item.id} className="flex items-center gap-4 border-b pb-2 last:border-b-0">
+            <img
+              src={item.product_image || '/placeholder.png'}
+              alt={item.product_name}
+              className="w-16 h-16 object-cover rounded"
+            />
+            <div className="flex-1">
+              <p className="font-medium">{item.product_name}</p>
+              <p className="text-gray-500 text-sm">Rp {item.price.toLocaleString()} x {item.quantity}</p>
+            </div>
+            <p className="font-semibold">Rp {(item.price * item.quantity).toLocaleString()}</p>
+          </div>
         ))}
-      </ul>
+        <div className="text-right font-bold text-lg mt-2">Total: Rp {order.total.toLocaleString()}</div>
+      </div>
     </div>
   );
 }

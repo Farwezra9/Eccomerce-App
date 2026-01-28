@@ -15,7 +15,6 @@ export default function LoginPage() {
       const res = await axios.post('/api/auth/login', { email, password });
       const role = res.data.role;
 
-      // Redirect sesuai role
       if (role === 'superadmin' || role === 'admin') router.push('/admin/dashboard');
       else if (role === 'seller') router.push('/seller/dashboard');
       else router.push('/user/dashboard');
@@ -25,20 +24,49 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit} style={{ maxWidth: 400 }}>
-        <div>
-          <label>Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <label>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-        </div>
-        {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
-        <button type="submit" style={{ marginTop: 15 }}>Login</button>
-      </form>
-    </>
+    <div className="flex items-center justify-center min-h-screen w-full bg-gray-100">
+      <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md mx-auto">
+        <h1 className="text-2xl font-bold text-center mb-6">Login</h1>
+
+        {error && (
+          <p className="bg-red-100 text-red-700 p-3 rounded mb-4 text-center">{error}</p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Login
+          </button>
+        </form>
+
+        <p className="text-sm text-gray-500 mt-4 text-center">
+          Belum punya akun? <a href="/register" className="text-indigo-600 hover:underline">Daftar</a>
+        </p>
+      </div>
+    </div>
   );
 }

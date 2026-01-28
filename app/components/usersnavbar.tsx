@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { ShoppingBag, User } from 'lucide-react';
 
 interface UserProfile {
   id: number;
@@ -19,74 +20,90 @@ export default function Navbar() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Cek apakah seller
         const resSeller = await axios.get('/api/seller/check');
         setIsSeller(resSeller.data.exists);
 
-        // Ambil profil user
         const resProfile = await axios.get('/api/profile');
         setProfile(resProfile.data);
-      } catch (err) {
-        console.error(err);
-        setIsSeller(false);
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          await fetch('/api/auth/logout', { method: 'POST'});
+          router.push('/auth/login');
+        } else {
+          console.error(err);
+        }
       }
     };
-
     fetchData();
-  }, []);
+  }, [router]);
 
   const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/logout', { method: 'POST'});
     router.push('/auth/login');
   };
 
-  if (isSeller === null || !profile) return <nav style={styles.nav}>Memuat...</nav>;
+  if (isSeller === null || !profile) {
+    return (
+      <nav className="sticky top-0 z-50 bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-4 text-white flex items-center justify-between shadow-md">
+        Memuat...
+      </nav>
+    );
+  }
 
   return (
-    <nav style={styles.nav}>
-      <Link href="/" style={styles.logo}>TOKO</Link>
+    <nav className="sticky top-0 z-50 bg-gradient-to-r from-blue-900 to-blue-700 px-6 py-3 flex items-center justify-between shadow-md">
+      {/* Logo */}
+      <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
+        <ShoppingBag className="h-6 w-6" />
+        TOKO
+      </Link>
 
-      <div style={styles.menu}>
-        <span>Hai, {profile.name} ({profile.email})</span>
+      {/* Menu */}
+      <div className="flex items-center gap-6 text-white text-sm md:text-base">
+        {/* User info */}
+        <span className="hidden md:flex items-center gap-1">
+          <User className="h-4 w-4" />
+          Hai, <b>{profile.name}</b>
+        </span>
 
-        <Link href="/user/dashboard">Produk</Link>
-        <Link href="/user/cart">Keranjang</Link>
-        <Link href="/user/orders">Pesanan</Link>
+        {/* Links */}
+        <Link href="/user/dashboard" className="hover:underline">
+          Produk
+        </Link>
+        <Link href="/user/cart" className="hover:underline">
+          Keranjang
+        </Link>
+        <Link href="/user/orders" className="hover:underline">
+          Pesanan
+        </Link>
 
         {isSeller ? (
-          <Link href="/seller/dashboard">Toko Saya</Link>
+          <Link
+            href="/seller/dashboard"
+            className="text-green-300 hover:underline"
+          >
+            Toko Saya
+          </Link>
         ) : (
-          <Link href="/user/register-seller">Daftar Jadi Seller</Link>
+          <Link href="/user/register-seller" className="hover:underline">
+            Jadi Seller
+          </Link>
         )}
-        <Link href="/user/profile">Profile</Link>
 
-        <button onClick={logout} style={styles.logout}>Logout</button>
+
+        {/* Profile */}
+        <Link href="/user/profile" className="hover:underline">
+          Profile
+        </Link>
+
+        {/* Logout */}
+        <button
+          onClick={logout}
+          className="hover:underline"
+        >
+          Logout
+        </button>
       </div>
     </nav>
   );
 }
-
-const styles = {
-  nav: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '1rem',
-    borderBottom: '1px solid #ddd',
-  },
-  logo: {
-    fontWeight: 'bold',
-    textDecoration: 'none',
-  },
-  menu: {
-    display: 'flex',
-    gap: '1rem',
-    alignItems: 'center',
-  },
-  logout: {
-    background: 'red',
-    color: 'white',
-    border: 'none',
-    padding: '6px 10px',
-    cursor: 'pointer',
-  },
-};

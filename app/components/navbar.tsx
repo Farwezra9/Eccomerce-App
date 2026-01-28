@@ -17,10 +17,12 @@ export default function Navbar() {
         background: "#222",
       }}
     >
-      <Link href="/" style={{ color: "#fff" }}>Home</Link>
-      <Link href="/user/dashboard/" style={{ color: "#fff" }}>User</Link>
-      <Link href="/seller/dashboard/" style={{ color: "#fff" }}>Seller</Link>
-      <Link href="/admin/dashboard/" style={{ color: "#fff" }}>Admin</Link>
+      <Link href="/admin/dashboard/" style={{ color: "#fff" }}>Home</Link>
+      <Link href="/admin/users/" style={{ color: "#fff" }}>User</Link>
+      <Link href="/admin/sellers/" style={{ color: "#fff" }}>Seller</Link>
+      <Link href="/admin/products/" style={{ color: "#fff" }}>products</Link>
+      <Link href="/admin/categories/" style={{ color: "#fff" }}>categories</Link>
+      <Link href="/admin/orders/" style={{ color: "#fff" }}>orders</Link>
       <Link href="/auth/login/" style={{ color: "#fff" }}>Login</Link>
       <Link href="/auth/register/" style={{ color: "#fff" }}>register</Link>
       <button

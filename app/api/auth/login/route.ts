@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { verifyPassword, signToken } from '@/lib/auth';
-import cookie from 'cookie';
+import { serialize } from 'cookie';
+
 
 export async function POST(req: Request) {
   const { email, password } = await req.json();
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
 
   response.headers.set(
     'Set-Cookie',
-    cookie.serialize('token', token, {
+    serialize('token', token, {
       httpOnly: true,
       path: '/',
       maxAge: 60 * 60 * 24,
