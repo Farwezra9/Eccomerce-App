@@ -1,7 +1,7 @@
 // app/api/auth/register/route.ts
 import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
-import { hashPassword } from '@/lib/auth';
+import bcrypt from 'bcrypt'; 
 
 export async function POST(req: Request) {
   try {
@@ -10,9 +10,8 @@ export async function POST(req: Request) {
     if (!name || !email || !password) {
       return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
     }
-
-    const hashedPassword = await hashPassword(password);
-
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
     const result = await pool.query(
       `INSERT INTO users (name, email, password, role)
        VALUES ($1, $2, $3, 'user')

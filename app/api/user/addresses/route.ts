@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server';
 import { getUserFromToken } from '@/lib/auth';
 import { pool } from '@/lib/db';
 
-/* =========================
-   GET → ambil alamat user
-========================= */
 export async function GET() {
   const user = await getUserFromToken();
   if (!user) {
@@ -22,16 +19,12 @@ export async function GET() {
   return NextResponse.json(res.rows);
 }
 
-/* =========================
-   POST → tambah alamat
-========================= */
 export async function POST(req: Request) {
   const user = await getUserFromToken();
   if (!user) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  // cek jumlah alamat (maks 2)
   const countRes = await pool.query(
     'SELECT COUNT(*) FROM user_addresses WHERE user_id = $1',
     [user.id]

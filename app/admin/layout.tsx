@@ -1,5 +1,5 @@
-import Navbar from '@/app/components/navbar';
-import Footer from '@/app/components/footer';
+import Navbar from '@/app/components/admin/navbar';
+import Footer from '@/app/components/admin/footer';
 
 export default function AdminLayout({
   children,

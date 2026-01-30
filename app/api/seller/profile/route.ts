@@ -10,7 +10,7 @@ export async function GET() {
       }
 
   const seller = await pool.query(
-    `SELECT id, shop_name, shop_description
+    `SELECT id, shop_name, status, shop_description
      FROM sellers
      WHERE user_id = $1`,
     [user.id]

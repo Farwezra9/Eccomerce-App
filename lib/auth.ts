@@ -1,5 +1,4 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 
 export interface UserToken extends JwtPayload {
@@ -7,13 +6,6 @@ export interface UserToken extends JwtPayload {
   email: string;
   role: 'superadmin' | 'admin' | 'seller' | 'user';
 }
-
-/** hash password */
-export const hashPassword = async (password: string) => bcrypt.hash(password, 10);
-
-/** verifikasi password */
-export const verifyPassword = async (password: string, hash: string) =>
-  bcrypt.compare(password, hash);
 
 /** buat JWT token */
 export const signToken = (payload: UserToken) =>

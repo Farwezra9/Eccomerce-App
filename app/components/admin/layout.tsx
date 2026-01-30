@@ -1,6 +1,6 @@
 // app/components/LayoutWrapper.tsx
 'use client';
-import Navbar from './navbar';
+import Navbar from './user/navbar';
 import Footer from './footer';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {

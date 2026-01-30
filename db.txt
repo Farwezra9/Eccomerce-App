@@ -211,3 +211,48 @@ JOIN users u ON o.user_id = u.id
 JOIN shipping_addresses sa ON o.shipping_id = sa.id
 LEFT JOIN shipping s ON o.id = s.order_id
 ORDER BY o.created_at DESC;
+ <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto shrink-0">
+          {['all', 'processing', 'packed', 'shipped'].map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={`px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                filterStatus === s ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {s === 'all' ? 'Semua' : s}
+            </button>
+          ))}
+        </div>
+        import { NextRequest, NextResponse } from 'next/server'
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const token = request.cookies.get('token')?.value
+
+  // public routes
+  if (pathname.startsWith('/auth')) {
+    return NextResponse.next()
+  }
+
+  // admin
+  if (pathname.startsWith('/admin') && !token) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // user
+  if (pathname.startsWith('/user') && !token) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  // seller
+  if (pathname.startsWith('/seller') && !token) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: ['/admin/:path*', '/user/:path*', '/seller/:path*'],
+}
