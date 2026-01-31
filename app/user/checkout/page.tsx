@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { 
   MapPin, Truck, CreditCard, ShoppingBag, 
-  ChevronRight, Phone, User, Home 
+  ChevronRight, ArrowRight, Plus, Edit2, X, CheckCircle2
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface ProductDetail {
   product_id: number;
@@ -39,9 +40,13 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
   const [newAddress, setNewAddress] = useState<Address>({
     id: 0, recipient_name: '', phone: '', address: '', city: '', postal_code: '',
   });
+
   const [courier, setCourier] = useState('jne');
   const [paymentMethod, setPaymentMethod] = useState('');
 
@@ -69,34 +74,41 @@ export default function CheckoutPage() {
   const shippingCost = SHIPPING_COST[courier];
   const total = subtotal + shippingCost;
 
+  // FUNGSI CHECKOUT
   const handleCheckout = async () => {
-    if (!selectedAddressId) {
-      const { recipient_name, phone, address, city, postal_code } = newAddress;
-      if (!recipient_name.trim() || !phone.trim() || !address.trim() || !city.trim() || !postal_code.trim()) {
-        alert('Mohon lengkapi semua data alamat pengiriman!');
-        return;
-      }
-    }
+   if (!product) return;
 
-    if (!paymentMethod) {
-      alert('Silakan pilih metode pembayaran!');
-      return;
-    }
+  // cek pembayaran
+  if (!paymentMethod) {
+    alert('Pilih metode pembayaran');
+    return;
+  }
 
-    try {
-      const shipping = selectedAddressId ? { id: selectedAddressId } : newAddress;
-      const res = await axios.post('/api/user/checkout', {
-        product_id: product?.product_id,
-        quantity,
-        shipping,
-        courier,
-        payment_method: paymentMethod,
-      });
-      router.push(`/user/orders/${res.data.order_id}`);
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Checkout gagal');
-    }
-  };
+  // cek alamat
+  const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+  if (!selectedAddress) {
+    alert('Pilih alamat pengiriman');
+    return;
+  }
+  
+  try {
+    const shipping = selectedAddressId
+      ? { id: selectedAddressId }
+      : newAddress;
+
+    const res = await axios.post('/api/user/checkout', {
+      product_id: product.product_id,
+      quantity,
+      shipping,
+      courier,
+      payment_method: paymentMethod,
+    });
+
+    router.push(`/user/orders/${res.data.order_id}`);
+  } catch (err: any) {
+    alert(err.response?.data?.message || 'Checkout gagal');
+  }
+};
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
@@ -109,178 +121,193 @@ export default function CheckoutPage() {
 
   if (!product) return <div className="text-center mt-20 font-bold text-red-500">Produk tidak ditemukan</div>;
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-slate-500 mb-6 font-medium">
-        <span className="hover:text-indigo-600 cursor-pointer" onClick={() => router.push('/user/cart')}>Keranjang</span>
-        <ChevronRight size={14} />
-        <span className="font-bold text-indigo-600">Checkout</span>
-      </div>
+  const selectedAddress = addresses.find(a => a.id === selectedAddressId);
 
-      <h1 className="text-3xl font-black text-slate-800 mb-8 tracking-tight">Checkout</h1>
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1 text-[11px] md:text-xs text-slate-500 mb-4 overflow-x-auto whitespace-nowrap pb-2 no-scrollbar">
+        <Link href="/" className="hover:text-indigo-600 font-bold shrink-0 transition-colors">BelanjaAja</Link>
+        <ChevronRight size={12} className="text-slate-300" />
+        <span className="text-slate-400 tracking-tight font-medium">Checkout</span>
+      </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* KOLOM KIRI: SATU CARD BESAR */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+        {/* KOLOM KIRI */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded border border-slate-100 shadow-sm overflow-hidden">
             
-            {/* Bagian 1: Alamat */}
-            <div className="p-8 border-b border-slate-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-2xl">
-                  <MapPin size={22} />
+            {/* Bagian Alamat */}
+            <div className="p-6 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <MapPin size={18} />
+                  </div>
+                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Alamat Pengiriman</h2>
                 </div>
-                <h2 className="text-lg font-black text-slate-800 uppercase tracking-wide">Detail Pengiriman</h2>
+                
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all uppercase"
+                >
+                  <Edit2 size={12} /> Ubah Alamat
+                </button>
               </div>
 
-              {addresses.length > 0 && (
-                <select
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 appearance-none"
-                  value={selectedAddressId ?? ''}
-                  onChange={e => setSelectedAddressId(e.target.value ? Number(e.target.value) : null)}
-                >
-                  {addresses.map(a => (
-                    <option key={a.id} value={a.id}>{a.recipient_name} — {a.city} ({a.postal_code})</option>
-                  ))}
-                  <option value="">+ Tambah Alamat Baru</option>
-                </select>
-              )}
-
-              {!selectedAddressId && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-300">
-                  <input
-                    className="p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                    placeholder="Nama Penerima *"
-                    value={newAddress.recipient_name}
-                    onChange={e => setNewAddress({ ...newAddress, recipient_name: e.target.value })}
-                  />
-                  <input
-                    className="p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                    placeholder="Nomor HP *"
-                    value={newAddress.phone}
-                    onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })}
-                  />
-                  <textarea
-                    className="md:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                    placeholder="Alamat Lengkap (Jalan, No. Rumah, RT/RW) *"
-                    rows={2}
-                    value={newAddress.address}
-                    onChange={e => setNewAddress({ ...newAddress, address: e.target.value })}
-                  />
-                  <input
-                    className="p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                    placeholder="Kota *"
-                    value={newAddress.city}
-                    onChange={e => setNewAddress({ ...newAddress, city: e.target.value })}
-                  />
-                  <input
-                    className="p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                    placeholder="Kode Pos *"
-                    value={newAddress.postal_code}
-                    onChange={e => setNewAddress({ ...newAddress, postal_code: e.target.value })}
-                  />
+              {selectedAddress ? (
+                <div className="bg-slate-50/50 border border-slate-100 p-4 rounded-xl">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-700">{selectedAddress.recipient_name}</span>
+                      <span className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded font-bold tracking-tighter">Utama</span>
+                    </div>
+                    <span className="text-xs text-slate-500 font-bold">{selectedAddress.phone}</span>
+                    <p className="text-xs text-slate-600 leading-relaxed mt-1">
+                      {selectedAddress.address}, {selectedAddress.city}, {selectedAddress.postal_code}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4 border-2 border-dashed border-slate-200 rounded-xl">
+                    <button onClick={() => setIsModalOpen(true)} className="text-xs font-bold text-indigo-600">+ Pilih Alamat</button>
                 </div>
               )}
             </div>
 
-            {/* Bagian 2: Kurir & Pembayaran dalam Grid */}
+            {/* Kurir & Bayar */}
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-              {/* Kurir */}
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                    <Truck size={20} />
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-indigo-50 text-orange-600 rounded-lg shrink-0">
+                    <Truck size={16} />
                   </div>
-                  <h3 className="font-bold text-slate-800">Metode Pengiriman</h3>
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Pengiriman</h3>
                 </div>
-                <select
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700"
-                  value={courier}
-                  onChange={e => setCourier(e.target.value)}
-                >
-                  <option value="jne">JNE Reguler (Rp 10.000)</option>
-                  <option value="sicepat">SiCepat Ekspres (Rp 9.000)</option>
-                  <option value="pos">POS Indonesia (Rp 8.000)</option>
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none text-xs font-bold appearance-none cursor-pointer focus:border-indigo-500 transition-all" value={courier} onChange={e => setCourier(e.target.value)}>
+                  <option value="jne">JNE Reguler (10rb)</option>
+                  <option value="sicepat">SiCepat (9rb)</option>
+                  <option value="pos">POS Indo (8rb)</option>
                 </select>
               </div>
 
-              {/* Pembayaran */}
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                    <CreditCard size={20} />
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-indigo-50 text-emerald-600 rounded-lg shrink-0">
+                    <CreditCard size={16} />
                   </div>
-                  <h3 className="font-bold text-slate-800">Metode Pembayaran</h3>
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Pembayaran</h3>
                 </div>
-                <select
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-bold text-emerald-700"
-                  value={paymentMethod}
-                  onChange={e => setPaymentMethod(e.target.value)}
-                >
-                  <option value="">Pilih Metode Bayar</option>
-                  <option value="bca_va">BCA Virtual Account</option>
-                  <option value="qris">QRIS (Gopay/OVO/Dana)</option>
-                  <option value="gopay">GoPay / GoPay Later</option>
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 outline-none text-xs font-bold text-emerald-700 appearance-none cursor-pointer focus:border-indigo-500 transition-all" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                  <option value="">Pilih Pembayaran</option>
+                  <option value="bca_va">BCA</option>
+                  <option value="bni_va">BNI</option>
+                  <option value="bri_va">BRI</option>
+                  <option value="qris">QRIS (Gopay/OVO)</option>
                 </select>
               </div>
             </div>
           </div>
         </div>
 
-        {/* KOLOM KANAN: Ringkasan Pesanan */}
+        {/* KOLOM KANAN */}
         <div className="lg:col-span-1">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-50/50 sticky top-24">
-            <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2 tracking-tight">
-              <ShoppingBag className="text-indigo-600" size={24} />
-              Ringkasan Pesanan
+          <div className="bg-white p-6 rounded border border-slate-200 shadow-sm sticky top-6">
+            <h2 className="text-xs font-bold text-slate-400 mb-6 flex items-center gap-2 uppercase tracking-widest">
+              <ShoppingBag size={16} className="text-indigo-600" /> Ringkasan Pesanan
             </h2>
-
-            <div className="space-y-4 mb-6 pb-6 border-b border-slate-100">
-              <div className="flex justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <p className="text-sm font-black text-slate-800 line-clamp-2 leading-snug">{product.product_name}</p>
-                  <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">{product.shop_name}</p>
-                </div>
-              </div>
-
-              <div className="flex justify-between text-sm font-bold">
-                <span className="text-slate-400">Harga Satuan</span>
-                <span className="text-slate-700">{formatPrice(product.price)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold">
-                <span className="text-slate-400">Jumlah (Qty)</span>
-                <span className="text-slate-800">{quantity}x</span>
+            <div className="space-y-3 pb-4 border-b border-slate-50">
+              <div className="flex justify-between">
+                <span className="text-xs font-bold text-slate-800 line-clamp-1 flex-1 pr-4">{product.product_name}</span>
+                <span className="text-xs font-bold text-slate-400">{quantity}x</span>
               </div>
             </div>
-
-            <div className="space-y-3 mb-8">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400 font-bold">Subtotal Produk</span>
-                <span className="text-slate-800 font-black">Rp {subtotal.toLocaleString()}</span>
+            <div className="space-y-3 mt-4">
+              <div className="flex justify-between text-xs font-bold text-slate-400">
+                <span>Subtotal</span>
+                <span className="text-slate-700">{formatPrice(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400 font-bold">Biaya Pengiriman</span>
-                <span className="text-slate-800 font-black">Rp {shippingCost.toLocaleString()}</span>
+              <div className="flex justify-between text-xs font-bold text-slate-400">
+                <span>Ongkir</span>
+                <span className="text-slate-700">{formatPrice(shippingCost)}</span>
               </div>
               <div className="pt-4 mt-2 border-t border-slate-100 flex justify-between items-center">
-                <span className="text-sm font-black text-slate-800 uppercase tracking-tighter">Total Tagihan</span>
-                <span className="text-2xl font-black text-indigo-700 tracking-tighter">Rp {total.toLocaleString()}</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total</span>
+                <span className="text-md font-black text-indigo-700 tracking-tighter">{formatPrice(total)}</span>
               </div>
             </div>
-
-            <button
-              onClick={handleCheckout}
-              className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-100 active:scale-95 flex items-center justify-center gap-2 group text-lg"
-            >
-              Checkout
-              <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+            <button onClick={handleCheckout} className="w-full mt-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded transition-all shadow-md text-[11px] uppercase tracking-widest flex items-center justify-center gap-2">
+              Checkout <ArrowRight size={14} />
             </button>
           </div>
         </div>
-
       </div>
+
+      {/* MODAL ALAMAT */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="font-black text-slate-800 text-sm uppercase tracking-tight">Pilih Alamat Pengiriman</h3>
+              <button onClick={() => {setIsModalOpen(false); setIsAddingNew(false);}} className="text-slate-400 hover:text-slate-600 p-1">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto flex-1 space-y-4">
+              {!isAddingNew ? (
+                <>
+                  {addresses.map((a) => (
+                    <div 
+                      key={a.id} 
+                      onClick={() => {setSelectedAddressId(a.id); setIsModalOpen(false);}}
+                      className={`p-4 rounded-xl border-2 transition-all cursor-pointer group relative ${selectedAddressId === a.id ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-100 hover:border-indigo-200'}`}
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-black text-slate-900">{a.recipient_name}</span>
+                        <span className="text-[10px] text-slate-500 font-bold">{a.phone}</span>
+                        <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">{a.address}, {a.city}</p>
+                      </div>
+                      {selectedAddressId === a.id && (
+                        <CheckCircle2 size={18} className="absolute top-4 right-4 text-indigo-600" />
+                      )}
+                    </div>
+                  ))}
+
+                  {addresses.length < 2 && (
+                    <button 
+                      onClick={() => setIsAddingNew(true)}
+                      className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-2 text-xs font-bold"
+                    >
+                      <Plus size={16} /> Tambah Alamat Baru
+                    </button>
+                  )}
+
+                  {addresses.length >= 2 && (
+                    <p className="text-center text-[10px] text-slate-400 font-medium italic">
+                      Maksimal 2 alamat tersimpan.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-in slide-in-from-bottom-4 duration-300">
+                  <input className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Nama Penerima" value={newAddress.recipient_name} onChange={e => setNewAddress({...newAddress, recipient_name: e.target.value})} />
+                  <input className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="No HP" value={newAddress.phone} onChange={e => setNewAddress({...newAddress, phone: e.target.value})} />
+                  <textarea className="md:col-span-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Alamat Lengkap" rows={2} value={newAddress.address} onChange={e => setNewAddress({...newAddress, address: e.target.value})} />
+                  <input className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Kota" value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} />
+                  <input className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Kode Pos" value={newAddress.postal_code} onChange={e => setNewAddress({...newAddress, postal_code: e.target.value})} />
+                  <div className="md:col-span-2 flex gap-2 pt-2">
+                    <button onClick={() => setIsAddingNew(false)} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Batal</button>
+                    <button className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-indigo-100 shadow-lg">Simpan & Pilih</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

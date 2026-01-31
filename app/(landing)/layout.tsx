@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { ReactNode } from 'react'
 import Navbar from '@/app/components/publicnavbar'
+import Footer from '@/app/components/publicfooter'
 import { getUserFromToken } from '@/lib/auth'
 
 export default async function UserLayout({
@@ -22,6 +23,7 @@ export default async function UserLayout({
       <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-10">
         {children}
       </main>
+      <Footer/>
     </div>
   )
 }

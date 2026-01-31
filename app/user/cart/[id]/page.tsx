@@ -3,25 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
-import { ShoppingCart, Store, Package, ChevronLeft, Minus, Plus } from 'lucide-react';
-
-interface ProductDetail {
-  product_id: number;
-  product_name: string;
-  description: string;
-  price: number;
-  stock: number;
-  shop_name: string;
-  seller_id: number;
-  primary_image: string | null;
-}
+import { Store, AlertCircle, Plus, Minus, Zap, ChevronRight, Package } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [product, setProduct] = useState<ProductDetail | null>(null);
+  const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
 
@@ -29,10 +19,19 @@ export default function ProductDetailPage() {
     const qty = searchParams.get('quantity');
     if (qty) setQuantity(Number(qty));
 
+    setLoading(true);
     axios.get(`/api/user/products/${id}`)
       .then(res => setProduct(res.data))
+      .catch(err => console.error("Error:", err))
       .finally(() => setLoading(false));
   }, [id, searchParams]);
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('id-ID', { 
+      style: 'currency', 
+      currency: 'IDR', 
+      minimumFractionDigits: 0 
+    }).format(price || 0);
 
   if (loading) return (
     <div className="flex h-96 items-center justify-center">
@@ -41,126 +40,129 @@ export default function ProductDetailPage() {
   );
 
   if (!product) return (
-    <div className="text-center py-20">
-      <p className="font-bold text-slate-500">Produk tidak ditemukan</p>
+    <div className="text-center py-20 font-bold text-slate-500">
+      <AlertCircle className="mx-auto text-slate-300 mb-4" size={48} />
+      Produk tidak ditemukan
     </div>
   );
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
-
-  const orderNow = () => {
-    router.push(`/user/checkout?product_id=${product.product_id}&quantity=${quantity}`);
-  };
-
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Tombol Kembali */}
-      <button 
-        onClick={() => router.back()}
-        className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold mb-6 transition-colors group"
-      >
-        <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-        Kembali
-      </button>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      
+      {/* Breadcrumbs Navigation */}
+      <nav className="flex items-center gap-1 text-[11px] md:text-xs text-slate-500 mb-4 overflow-x-auto whitespace-nowrap pb-2 no-scrollbar">
+        <Link href="/" className="hover:text-indigo-600 font-bold shrink-0 transition-colors">BelanjaAja</Link>
+        <ChevronRight size={12} className="text-slate-300 shrink-0" />
         
-        {/* Kolom Kiri: Gambar */}
-        <div className="relative aspect-square bg-slate-50 rounded-[2rem] overflow-hidden group">
-          {product.primary_image ? (
-            <img
-              src={product.primary_image}
-              alt={product.product_name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-300">
-              <Package size={64} />
-            </div>
-          )}
-          {product.stock === 0 && (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-              <span className="bg-red-500 text-white px-6 py-2 rounded-full font-black text-sm uppercase tracking-widest shadow-lg">Habis</span>
-            </div>
-          )}
+        {product.breadcrumbs?.map((cat: any) => (
+          <div key={cat.id} className="flex items-center gap-1 shrink-0 ">
+            <Link href={`/category/${cat.id}`} className="hover:text-indigo-600 font-bold transition-colors">
+              {cat.name}
+            </Link>
+            <ChevronRight size={12} className="text-slate-300 shrink-0" />
+          </div>
+        ))}
+        
+        <span className="text-slate-500 truncate max-w-[200px] md:max-w-xs tracking-tight">
+          {product.product_name}
+        </span>
+      </nav>
+
+      <div className="flex flex-col md:flex-row gap-6 lg:gap-8 bg-white p-4 md:p-6 rounded-2xl border border-slate-100 shadow-sm">
+        
+        {/* Kolom Gambar - Tetap 40% sesuai referensi */}
+        <div className="w-full md:w-[40%]">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 group">
+            {product.primary_image ? (
+              <img 
+                src={product.primary_image} 
+                alt={product.product_name} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                loading="eager"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-center justify-center text-slate-300 text-xs font-bold uppercase tracking-widest">
+                <Package size={32} className="mb-2" /> No Image
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Kolom Kanan: Detail & Aksi */}
-        <div className="flex flex-col">
-          <div className="flex-1">
-            {/* Nama Toko */}
-            <div className="flex items-center gap-2 text-indigo-600 mb-4">
-              <div className="p-2 bg-indigo-50 rounded-xl">
-                <Store size={18} />
+        {/* Kolom Detail */}
+        <div className="flex-1 flex flex-col py-1">
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-2xl uppercase tracking-wider">Original</span>
+              <div className="flex items-center gap-1 text-slate-400">
+                <Store size={14} />
+                <span className="text-xs font-bold">{product.shop_name}</span>
               </div>
-              <span className="font-black text-xs uppercase tracking-widest">{product.shop_name}</span>
             </div>
-
-            {/* Nama Produk */}
-            <h1 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight leading-tight mb-4">
+            
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 leading-tight mb-2 tracking-tight">
               {product.product_name}
             </h1>
-
-            {/* Harga */}
-            <p className="text-3xl font-black text-indigo-600 italic mb-6">
+            <p className="text-2xl font-black text-emerald-700 mb-4 tracking-tighter">
               {formatPrice(product.price)}
             </p>
-
-            <div className="h-px bg-slate-100 w-full mb-6" />
-
-            {/* Deskripsi */}
-            <div className="mb-8">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Deskripsi Produk</h3>
-              <p className="text-slate-600 leading-relaxed font-medium italic">
-                {product.description}
-              </p>
-            </div>
-
-            {/* Stok & Atur Jumlah */}
-            <div className="flex flex-col gap-4 mb-8">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Atur Jumlah</h3>
-                <span className={`text-xs font-bold ${product.stock <= 5 ? 'text-amber-500' : 'text-slate-400'}`}>
-                  Stok: {product.stock}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200">
-                  <button
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                    disabled={quantity === 1 || product.stock === 0}
-                    className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-white hover:text-indigo-600 rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-transparent"
-                  >
-                    <Minus size={18} />
-                  </button>
-                  <div className="w-12 text-center font-black text-slate-800">{quantity}</div>
-                  <button
-                    onClick={() => setQuantity(q => Math.min(product.stock, q + 1))}
-                    disabled={quantity === product.stock || product.stock === 0}
-                    className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-white hover:text-indigo-600 rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-transparent"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-                <div className="text-xs font-bold text-slate-400 uppercase italic">
-                   Total: <span className="text-slate-800 not-italic">{formatPrice(product.price * quantity)}</span>
-                </div>
-              </div>
-            </div>
+            
+            <div className="h-px bg-slate-100 w-full mb-4" />
+            
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Deskripsi</h3>
+            <p className="text-xs text-slate-500 leading-relaxed line-clamp-4 md:line-clamp-none whitespace-pre-line">
+              {product.description || "Minimalist product description."}
+            </p>
           </div>
 
-          {/* Action Button */}
-          <button
-            onClick={orderNow}
-            disabled={product.stock === 0}
-            className="w-full flex items-center justify-center gap-3 bg-indigo-600 text-white px-8 py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed group"
-          >
-            <ShoppingCart className="h-5 w-5 group-hover:animate-bounce" />
-            Pesan Sekarang
-          </button>
+          {/* Selector & Action */}
+          <div className="mt-auto pt-4 border-t border-slate-50">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col">
+                <span className="text-xs font-black text-slate-800 uppercase tracking-widest">Jumlah</span>
+                <span className="text-[10px] text-slate-400 font-bold">Stok: {product.stock || 0}</span>
+              </div>
+              <div className="flex items-center bg-slate-50 rounded-xl p-1 border border-slate-100">
+                <button 
+                  disabled={quantity <= 1}
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))} 
+                  className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-indigo-600 active:scale-90 disabled:opacity-30"
+                >
+                  <Minus size={16} />
+                </button>
+                <span className="w-8 text-center font-black text-sm text-slate-800">{quantity}</span>
+                <button 
+                  disabled={quantity >= (product.stock || 99)}
+                  onClick={() => setQuantity(Math.min(product.stock || 99, quantity + 1))} 
+                  className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-indigo-600 active:scale-90 disabled:opacity-30"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop Action - Beli Sekarang Jadi Full Width */}
+            <div className="hidden md:flex">
+              <button 
+                disabled={product.stock === 0}
+                onClick={() => router.push(`/user/checkout?product_id=${product.id}&quantity=${quantity}`)} 
+                className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                <Zap size={16} fill="currentColor" /> BELI SEKARANG
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Mobile Floating Bar - Full Width Button */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-100 p-3 z-50 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+        <button 
+          disabled={product.stock === 0}
+          onClick={() => router.push(`/user/checkout?product_id=${product.id}&quantity=${quantity}`)} 
+          className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all disabled:opacity-50"
+        >
+          <Zap size={18} fill="currentColor" /> BELI SEKARANG
+        </button>
       </div>
     </div>
   );

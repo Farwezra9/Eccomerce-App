@@ -5,7 +5,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Package, ArrowRight, ChevronLeft, 
+  Package, ArrowRight, ChevronRight, 
   Clock, CheckCircle2, Truck, XCircle, CreditCard 
 } from 'lucide-react';
 
@@ -37,6 +37,7 @@ export default function UserOrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     axios.get('/api/user/orders')
@@ -50,6 +51,22 @@ export default function UserOrdersPage() {
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
 
+  const filteredOrders = activeTab === 'all' 
+    ? orders 
+    : orders.filter(order => order.order_status === activeTab);
+
+  const tabs = [
+    { id: 'all', label: 'Semua' },
+    { id: 'pending', label: 'Menunggu' },
+    { id: 'paid', label: 'Dibayar' },
+    { id: 'shipped', label: 'Dikirim' },
+    { id: 'completed', label: 'Selesai' },
+    { id: 'cancelled', label: 'Batal' },
+  ];
+
+  // Cari label tab aktif untuk ditampilkan di pesan "Empty State"
+  const activeTabLabel = tabs.find(t => t.id === activeTab)?.label;
+
   if (loading) return (
     <div className="flex h-96 items-center justify-center">
       <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
@@ -58,70 +75,81 @@ export default function UserOrdersPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Tombol Kembali */}
-      <button 
-        onClick={() => router.push('/user/dashboard')}
-        className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-semibold mb-6 transition-colors"
-      >
-        <ChevronLeft size={20} />
-        Kembali Belanja
-      </button>
+      
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1 text-xs text-slate-500 mb-6 overflow-x-auto whitespace-nowrap pb-2 no-scrollbar">
+        <Link href="/" className="hover:text-indigo-600 font-bold shrink-0 transition-colors">BelanjaAja</Link>
+        <ChevronRight size={12} className="text-slate-300 shrink-0" />
+        <span className="text-slate-500 truncate max-w-[200px] tracking-tight">
+          Pesanan Saya
+        </span>
+      </nav>
 
-      {/* Header Banner (Identik dengan Cart) */}
-      <div className="bg-gradient-to-br from-indigo-900 to-blue-700 text-white p-8 rounded-2xl shadow-xl mb-10 relative overflow-hidden">
-        <div className="relative z-10">
-          <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
-            <Package size={32} />
-            Pesanan Saya
-          </h1>
-          <p className="mt-2 text-indigo-100 font-medium opacity-90">
-            Pantau status pengiriman dan riwayat belanja kamu di sini.
-          </p>
+      {/* Tab Navigasi - Full Width */}
+      <div className="mb-8 border-b border-slate-200">
+        <div className="flex w-full justify-between items-center">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 pb-4 text-[10px] md:text-sm font-bold transition-all relative text-center ${
+                activeTab === tab.id 
+                  ? 'text-indigo-600' 
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full"></div>
+              )}
+            </button>
+          ))}
         </div>
-        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
       </div>
 
-      {orders.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+      {filteredOrders.length === 0 ? (
+        <div className="text-center py-20 bg-white rounded border border-dashed border-slate-300">
           <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package size={40} className="text-slate-300" />
           </div>
-          <p className="text-slate-500 font-bold text-lg">Belum ada riwayat pesanan</p>
+          <p className="text-slate-500 font-bold text-sm px-4">
+            Tidak ada pesanan {activeTab !== 'all' ? `dengan status ${activeTabLabel}` : ''}
+          </p>
           <button 
-            onClick={() => router.push('/user/dashboard')}
-            className="mt-4 text-indigo-600 font-bold hover:underline"
+            onClick={() => activeTab === 'all' ? router.push('/user/dashboard') : setActiveTab('all')}
+            className="mt-4 text-indigo-600 font-bold text-sm hover:underline"
           >
-            Mulai Belanja Sekarang
+            {activeTab === 'all' ? 'Mulai Belanja Sekarang' : 'Lihat Semua Pesanan'}
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          {orders.map(order => {
+        <div className="space-y-4">
+          {filteredOrders.map(order => {
             const status = statusConfig[order.order_status] || { label: order.order_status, class: 'bg-gray-100 text-gray-700', icon: Clock };
             const StatusIcon = status.icon;
 
             return (
-              <div key={order.order_id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:border-indigo-100 transition-all">
+              <div key={order.order_id} className="bg-white rounded border border-slate-100 shadow-sm overflow-hidden hover:border-indigo-100 transition-all">
                 {/* Header Card */}
-                <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-black text-slate-400 tracking-widest uppercase">ID: #{order.order_id}</span>
+                <div className="p-3.5 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">#{order.order_id}</span>
                     <span className="text-slate-300">|</span>
-                    <span className="text-xs font-bold text-slate-500">
-                      {new Date(order.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    <span className="text-[11px] font-bold text-slate-500">
+                      {new Date(order.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest ${status.class}`}>
-                    <StatusIcon size={12} strokeWidth={3} />
+                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black tracking-widest ${status.class}`}>
+                    <StatusIcon size={10} strokeWidth={3} />
                     {status.label}
                   </div>
                 </div>
 
-                {/* List Produk dalam Pesanan */}
+                {/* List Produk */}
                 <div className="divide-y divide-slate-50">
                   {order.items.map(item => (
                     <div key={item.id} className="p-4 flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 flex-shrink-0">
+                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 border border-slate-100 flex-shrink-0">
                         <img 
                           src={item.product_image || '/placeholder.png'} 
                           alt={item.product_name} 
@@ -129,13 +157,13 @@ export default function UserOrdersPage() {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-slate-800 font-bold truncate">{item.product_name}</h3>
-                        <p className="text-xs text-slate-400 font-bold uppercase mt-0.5">
-                          {item.quantity} Barang x {formatPrice(item.price)}
+                        <h3 className="text-slate-800 text-sm font-medium truncate">{item.product_name}</h3>
+                        <p className="text-sm text-slate-500 uppercase mt-0.5">
+                          {item.quantity} x {formatPrice(item.price)}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-black text-slate-800 tracking-tight">
+                        <p className="text-sm text-emerald-700 tracking-tight">
                           {formatPrice(item.price * item.quantity)}
                         </p>
                       </div>
@@ -144,19 +172,19 @@ export default function UserOrdersPage() {
                 </div>
 
                 {/* Footer Card */}
-                <div className="p-4 bg-white border-t border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="p-3.5 bg-white border-t border-slate-100 flex justify-between items-center">
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">Total Bayar</p>
-                    <p className="text-xl font-black text-emerald-700 tracking-tighter">
+                    <p className="text-slate-800 text-sm font-medium truncate">SubTotal + Ongkir</p>
+                    <p className="text-sm font-black text-emerald-700 tracking-tighter">
                       {formatPrice(order.total)}
                     </p>
                   </div>
                   <Link
                     href={`/user/orders/${order.order_id}`}
-                    className="w-full sm:w-auto px-6 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white font-black rounded-xl text-xs transition-all flex items-center justify-center gap-2 group"
+                    className="px-5 py-2 bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white font-black rounded-lg text-[10px] transition-all flex items-center justify-center gap-2 group uppercase tracking-widest"
                   >
-                    LIHAT DETAIL
-                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    DETAIL
+                    <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
               </div>
