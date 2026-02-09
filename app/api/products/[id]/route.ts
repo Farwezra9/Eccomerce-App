@@ -1,43 +1,47 @@
 import { NextResponse } from 'next/server';
-import { getUserFromToken } from '@/lib/auth';
-import { pool } from "@/lib/db";
+import { pool } from '@/lib/db';
 
 export async function GET(req: Request, context: any) {
+  const { params } = context;
+  const { id } = await params;
+
   try {
-    // Unwrap params
-    const params = await context.params;
-    const productId = Number(params.id);
-    if (!productId) return NextResponse.json({ message: 'Product ID invalid' }, { status: 400 });
+    const query = `
+      WITH RECURSIVE category_path AS (
+          -- Ambil kategori langsung dari produk
+          SELECT c.id, c.name, c.parent_id, 1 as level
+          FROM categories c
+          JOIN products p ON p.category_id = c.id
+          WHERE p.id = $1
 
-    const user = await getUserFromToken();
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+          UNION ALL
+
+          -- Naik ke parent secara rekursif
+          SELECT c.id, c.name, c.parent_id, cp.level + 1
+          FROM categories c
+          JOIN category_path cp ON c.id = cp.parent_id
+      )
+      SELECT 
+          p.id AS product_id, 
+          p.name AS product_name,
+          p.*, 
+          s.shop_name,
+          -- Gabungkan kategori menjadi array JSON, diurutkan dari level tertinggi (induk) ke terendah
+          (SELECT json_agg(cp ORDER BY cp.level DESC) FROM category_path cp) as breadcrumbs
+      FROM products p
+      JOIN sellers s ON p.seller_id = s.id
+      WHERE p.id = $1;
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
-    // Ambil detail produk beserta seller dan gambar utama
-    const res = await pool.query(
-      `SELECT 
-         p.id AS product_id,
-         p.name AS product_name,
-         p.description,
-         p.price,
-         p.stock,
-         s.shop_name,
-         s.id AS seller_id,
-         pi.image_url AS primary_image
-       FROM products p
-       JOIN sellers s ON p.seller_id = s.id
-       LEFT JOIN product_images pi 
-         ON pi.product_id = p.id AND pi.is_primary = TRUE
-       WHERE p.id = $1`,
-      [productId]
-    );
 
-    const product = res.rows[0];
-    if (!product) return NextResponse.json({ message: 'Produk tidak ditemukan' }, { status: 404 });
-
-    return NextResponse.json(product);
-  } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ message: 'Gagal mengambil produk' }, { status: 500 });
+    return NextResponse.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
