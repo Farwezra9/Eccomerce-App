@@ -19,6 +19,11 @@ export default function UserNavbar() {
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
+  // Sync query URL → input
+  useEffect(() => {
+    setSearchQuery(searchParams.get('q') || '');
+  }, [searchParams]);
+
   const handleClickOutside = useCallback((event: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
       setIsDropdownOpen(false);
@@ -40,7 +45,7 @@ export default function UserNavbar() {
         setIsSeller(resSeller.data.exists);
         setProfile(resProfile.data);
       } catch (err: any) {
-        if (err.response?.status === 401) router.push('/auth/login');
+        if (err.response?.status === 401) router.push('/');
       } finally {
         setLoading(false);
       }
@@ -51,17 +56,22 @@ export default function UserNavbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim();
-    router.push(query ? `/user/dashboard?q=${encodeURIComponent(query)}` : `/user/dashboard`);
+
+    router.push(
+      query
+        ? `/products?q=${encodeURIComponent(query)}`
+        : `/products`
+    );
   };
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => pathname.startsWith(path);
 
   return (
     <nav className="sticky top-0 z-50 bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 px-4 md:px-8 py-2.5 flex items-center gap-6 shadow-xl border-b border-white/10">
       
-      {/* KIRI: Logo dengan Jarak Ekstra ke Kanan */}
+      {/* KIRI: Logo */}
       <div className="flex-shrink-0 mr-4 md:mr-8">
-        <Link href="/user/dashboard" className="flex items-center gap-3 text-xl font-bold text-white">
+        <Link href="/" className="flex items-center gap-3 text-xl font-bold text-white">
           <div className="bg-white/20 backdrop-blur-md p-1.5 rounded-md border border-white/30 shadow-inner">
             <ShoppingBag className="h-5 w-5 text-white" />
           </div>
@@ -69,7 +79,7 @@ export default function UserNavbar() {
         </Link>
       </div>
 
-      {/* TENGAH: Search Bar FULL & KOTAK */}
+      {/* TENGAH: Search */}
       <form onSubmit={handleSearch} className="flex-1 group relative">
         <input 
           type="text"
@@ -81,16 +91,18 @@ export default function UserNavbar() {
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
       </form>
 
-      {/* KANAN: Action Area */}
+      {/* KANAN */}
       <div className="flex items-center gap-3 md:gap-5 flex-shrink-0">
-        {/* Ikon Keranjang */}
+        
+        {/* Cart */}
         <Link 
-          href="/user/cart" className={`p-2 rounded-md transition-all ${isActive('/user/cart') ? 'text-white' : 'text-indigo-100'} hover:bg-white/10`}
+          href="/user/cart" 
+          className={`p-2 rounded-md transition-all ${isActive('/user/cart') ? 'text-white' : 'text-indigo-100'} hover:bg-white/10`}
         >
           <ShoppingCart size={24} />
         </Link>
 
-        {/* Upgrade Account (Desktop Only) */}
+        {/* Upgrade Seller */}
         {!loading && !isSeller && (
           <Link 
             href="/user/register-seller" 
@@ -101,7 +113,7 @@ export default function UserNavbar() {
           </Link>
         )}
 
-        {/* User Dropdown */}
+        {/* Dropdown */}
         {loading ? (
           <div className="h-10 w-10 bg-white/10 animate-pulse rounded-md"></div>
         ) : (
@@ -118,30 +130,46 @@ export default function UserNavbar() {
 
             {isDropdownOpen && (
               <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-lg shadow-2xl py-2 z-50 overflow-hidden text-slate-700 animate-in fade-in zoom-in duration-100">
+                
                 <div className="px-4 py-2 border-b border-slate-50 mb-1">
                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest leading-none mb-1">Halo,</p>
                   <p className="text-sm font-bold text-slate-900 truncate">{profile?.name}</p>
                 </div>
                 
-                <Link href="/user/profile" className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors" onClick={() => setIsDropdownOpen(false)}>
+                <Link 
+                  href="/user/profile" 
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
+                  onClick={() => setIsDropdownOpen(false)}
+                >
                   <User size={14} /> Profil Akun
                 </Link>
 
-                <Link href="/user/orders" className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors" onClick={() => setIsDropdownOpen(false)}>
+                <Link 
+                  href="/user/orders" 
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors"
+                  onClick={() => setIsDropdownOpen(false)}
+                >
                   <CreditCard size={14} /> Pesanan Saya
                 </Link>
                 
                 {isSeller && (
-                  <Link href="/seller/dashboard" className="flex items-center gap-2 px-4 py-2.5 text-sm text-emerald-600 font-bold hover:bg-emerald-50 transition-colors" onClick={() => setIsDropdownOpen(false)}>
+                  <Link 
+                    href="/seller/dashboard" 
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-emerald-600 font-bold hover:bg-emerald-50 transition-colors"
+                    onClick={() => setIsDropdownOpen(false)}
+                  >
                     <Store size={14} /> Dashboard Toko
                   </Link>
                 )}
                 
                 <hr className="my-1 border-slate-100" />
+
                 <button 
                   onClick={async () => {
                     await fetch('/api/auth/logout', { method: 'POST' });
-                    router.push('/auth/login');
+                    setIsDropdownOpen(false);
+                    router.replace('/auth/login');
+                    router.refresh();
                   }}
                   className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold transition-colors"
                 >

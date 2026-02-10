@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+
 import { Mail, Lock, ArrowRight, ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
@@ -22,9 +23,9 @@ export default function LoginPage() {
       const res = await axios.post('/api/auth/login', { email, password });
       const role = res.data.role;
 
-      if (role === 'superadmin' || role === 'admin') router.push('/admin/dashboard');
-      else if (role === 'seller') router.push('/seller/dashboard');
-      else router.push('/user/dashboard');
+      if (role === 'admin' || role === 'superadmin') router.push('/admin/dashboard');
+      else if (role === 'user') router.push('/');
+      else router.push('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Email atau password salah');
     } finally {
