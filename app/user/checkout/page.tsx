@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { 
@@ -50,12 +50,14 @@ export default function CheckoutPage() {
   const [courier, setCourier] = useState('jne');
   const [paymentMethod, setPaymentMethod] = useState('');
 
+  // Ambil data dari URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setProductId(params.get('product_id'));
     setQuantity(Number(params.get('quantity') || 1));
   }, []);
 
+  // Fetch Produk
   useEffect(() => {
     if (!productId) return;
     axios.get(`/api/user/products/${productId}`)
@@ -63,52 +65,76 @@ export default function CheckoutPage() {
       .finally(() => setLoading(false));
   }, [productId]);
 
+  // Fetch Alamat
   useEffect(() => {
     axios.get('/api/user/addresses').then(res => {
       setAddresses(res.data);
-      if (res.data.length > 0) setSelectedAddressId(res.data[0].id);
+      if (res.data.length > 0 && !selectedAddressId) {
+        setSelectedAddressId(res.data[0].id);
+      }
     });
-  }, []);
+  }, [selectedAddressId]);
 
-  const subtotal = product ? product.price * quantity : 0;
-  const shippingCost = SHIPPING_COST[courier];
-  const total = subtotal + shippingCost;
+  const subtotal = useMemo(() => (product ? product.price * quantity : 0), [product, quantity]);
+  const shippingCost = useMemo(() => SHIPPING_COST[courier], [courier]);
+  const total = useMemo(() => subtotal + shippingCost, [subtotal, shippingCost]);
 
-  // FUNGSI CHECKOUT
+  const selectedAddress = useMemo(() => {
+    return addresses.find(a => a.id === selectedAddressId) || null;
+  }, [addresses, selectedAddressId]);
+
+  const handleSaveNewAddress = async () => {
+    try {
+      if (
+        !newAddress.recipient_name ||
+        !newAddress.phone ||
+        !newAddress.address ||
+        !newAddress.city ||
+        !newAddress.postal_code
+      ) {
+        alert('Lengkapi semua field alamat');
+        return;
+      }
+
+      const res = await axios.post('/api/user/addresses', newAddress);
+      const savedAddress = res.data;
+
+      // Update state secara lokal agar UI langsung berubah tanpa refresh
+      setAddresses(prev => [...prev, savedAddress]);
+      setSelectedAddressId(savedAddress.id);
+
+      // Reset Form & Tutup Modal
+      setNewAddress({
+        id: 0, recipient_name: '', phone: '', address: '', city: '', postal_code: '',
+      });
+      setIsAddingNew(false);
+      setIsModalOpen(false);
+
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal simpan alamat');
+    }
+  };
+
+  // CHECKOUT
   const handleCheckout = async () => {
-   if (!product) return;
+    if (!product) return;
+    if (!paymentMethod) return alert('Pilih metode pembayaran');
+    if (!selectedAddress) return alert('Pilih alamat pengiriman');
 
-  // cek pembayaran
-  if (!paymentMethod) {
-    alert('Pilih metode pembayaran');
-    return;
-  }
+    try {
+      const res = await axios.post('/api/user/checkout', {
+        product_id: product.product_id,
+        quantity,
+        shipping: { id: selectedAddressId },
+        courier,
+        payment_method: paymentMethod,
+      });
 
-  // cek alamat
-  const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-  if (!selectedAddress) {
-    alert('Pilih alamat pengiriman');
-    return;
-  }
-  
-  try {
-    const shipping = selectedAddressId
-      ? { id: selectedAddressId }
-      : newAddress;
-
-    const res = await axios.post('/api/user/checkout', {
-      product_id: product.product_id,
-      quantity,
-      shipping,
-      courier,
-      payment_method: paymentMethod,
-    });
-
-    router.push(`/user/orders/${res.data.order_id}`);
-  } catch (err: any) {
-    alert(err.response?.data?.message || 'Checkout gagal');
-  }
-};
+      router.push(`/user/orders/${res.data.order_id}`);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Checkout gagal');
+    }
+  };
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
@@ -121,12 +147,9 @@ export default function CheckoutPage() {
 
   if (!product) return <div className="text-center mt-20 font-bold text-red-500">Produk tidak ditemukan</div>;
 
-  const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-[11px] md:text-xs text-slate-500 mb-4 overflow-x-auto whitespace-nowrap pb-2 no-scrollbar">
         <Link href="/" className="hover:text-indigo-600 font-bold shrink-0 transition-colors">BelanjaAja</Link>
         <ChevronRight size={12} className="text-slate-300" />
@@ -135,11 +158,9 @@ export default function CheckoutPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* KOLOM KIRI */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded border border-slate-100 shadow-sm overflow-hidden">
             
-            {/* Bagian Alamat */}
             <div className="p-6 border-b border-slate-100">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
@@ -177,7 +198,6 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* Kurir & Bayar */}
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-4">
@@ -196,7 +216,9 @@ export default function CheckoutPage() {
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-indigo-50 text-emerald-600 rounded-lg shrink-0">
-                    <CreditCard size={16} />
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard size={16} />
+                    </div>
                   </div>
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Pembayaran</h3>
                 </div>
@@ -212,7 +234,6 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* KOLOM KANAN */}
         <div className="lg:col-span-1">
           <div className="bg-white p-6 rounded border border-slate-200 shadow-sm sticky top-6">
             <h2 className="text-xs font-bold text-slate-400 mb-6 flex items-center gap-2 uppercase tracking-widest">
@@ -262,7 +283,10 @@ export default function CheckoutPage() {
                   {addresses.map((a) => (
                     <div 
                       key={a.id} 
-                      onClick={() => {setSelectedAddressId(a.id); setIsModalOpen(false);}}
+                      onClick={() => {
+                        setSelectedAddressId(a.id);
+                        setIsModalOpen(false);
+                      }}
                       className={`p-4 rounded-xl border-2 transition-all cursor-pointer group relative ${selectedAddressId === a.id ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-100 hover:border-indigo-200'}`}
                     >
                       <div className="flex flex-col gap-0.5">
@@ -276,19 +300,13 @@ export default function CheckoutPage() {
                     </div>
                   ))}
 
-                  {addresses.length < 2 && (
+                  {addresses.length < 5 && (
                     <button 
                       onClick={() => setIsAddingNew(true)}
                       className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-2 text-xs font-bold"
                     >
                       <Plus size={16} /> Tambah Alamat Baru
                     </button>
-                  )}
-
-                  {addresses.length >= 2 && (
-                    <p className="text-center text-[10px] text-slate-400 font-medium italic">
-                      Maksimal 2 alamat tersimpan.
-                    </p>
                   )}
                 </>
               ) : (
@@ -300,7 +318,12 @@ export default function CheckoutPage() {
                   <input className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Kode Pos" value={newAddress.postal_code} onChange={e => setNewAddress({...newAddress, postal_code: e.target.value})} />
                   <div className="md:col-span-2 flex gap-2 pt-2">
                     <button onClick={() => setIsAddingNew(false)} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Batal</button>
-                    <button className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-indigo-100 shadow-lg">Simpan & Pilih</button>
+                    <button
+                      onClick={handleSaveNewAddress}
+                      className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-indigo-100 shadow-lg"
+                    >
+                      Simpan & Pilih
+                    </button>
                   </div>
                 </div>
               )}

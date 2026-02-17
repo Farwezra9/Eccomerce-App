@@ -103,7 +103,7 @@ export default function CartPage() {
           </div>
           <p className="text-slate-500 font-bold text-lg">Keranjangmu masih kosong</p>
           <button 
-            onClick={() => router.push('/user/dashboard')}
+            onClick={() => router.push('/')}
             className="mt-4 text-indigo-600 font-bold hover:underline"
           >
             Mulai Belanja Sekarang
@@ -115,7 +115,7 @@ export default function CartPage() {
             {cart.map(item => (
               <div 
                 key={item.cart_id} 
-                onClick={() => router.push(`/user/cart/${item.product_id}?quantity=${item.quantity}`)}
+                onClick={() => router.push(`/cart/${item.product_id}?quantity=${item.quantity}`)}
                 /* Menggunakan Grid pada Desktop (3 kolom), dan Flex pada Mobile */
                 className="group flex flex-col md:grid md:grid-cols-3 md:items-center bg-white p-4 rounded border border-slate-100 shadow-sm hover:border-indigo-100 transition-all cursor-pointer active:scale-[0.99] gap-4"
               >

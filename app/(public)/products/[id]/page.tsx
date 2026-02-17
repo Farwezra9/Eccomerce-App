@@ -50,7 +50,7 @@ export default function ProductDetailPage() {
       quantity
     });
 
-    router.push('/user/cart');
+    router.push('/cart');
   };
 
   // ✅ HANDLE BUY NOW

@@ -67,10 +67,10 @@ export default function UserNavbar() {
   const isActive = (path: string) => pathname.startsWith(path);
 
   return (
-    <nav className="sticky top-0 z-50 bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 px-4 md:px-8 py-2.5 flex items-center gap-6 shadow-xl border-b border-white/10">
+    <nav className="sticky top-0 z-50 bg-linear-to-r from-indigo-900 via-indigo-800 to-indigo-900 px-4 md:px-8 py-2.5 flex items-center gap-6 shadow-xl border-b border-white/10">
       
       {/* KIRI: Logo */}
-      <div className="flex-shrink-0 mr-4 md:mr-8">
+      <div className="shrink-0 mr-4 md:mr-8">
         <Link href="/" className="flex items-center gap-3 text-xl font-bold text-white">
           <div className="bg-white/20 backdrop-blur-md p-1.5 rounded-md border border-white/30 shadow-inner">
             <ShoppingBag className="h-5 w-5 text-white" />
@@ -92,11 +92,11 @@ export default function UserNavbar() {
       </form>
 
       {/* KANAN */}
-      <div className="flex items-center gap-3 md:gap-5 flex-shrink-0">
+      <div className="flex items-center gap-3 md:gap-5 shrink-0">
         
         {/* Cart */}
         <Link 
-          href="/user/cart" 
+          href="/cart" 
           className={`p-2 rounded-md transition-all ${isActive('/user/cart') ? 'text-white' : 'text-indigo-100'} hover:bg-white/10`}
         >
           <ShoppingCart size={24} />
